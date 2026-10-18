@@ -1,6 +1,6 @@
 {
   "name": "gladys-quatt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Gladys Assistant external integration for the Quatt hybrid heat pump, read only through the local JSON API of its CiC: temperatures, power, COP, flow, status and faults. Unofficial, not affiliated with Quatt.",
   "type": "module",

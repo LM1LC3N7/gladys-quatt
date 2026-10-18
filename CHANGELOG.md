@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-18
+
 ### Added
 
 - First version, never tested with a real CiC: the Quatt hybrid heat pump,
@@ -41,4 +43,5 @@ the notes of the version's GitHub Release.
 - Retry delays under a minute are shown in seconds.
 - A device created or updated while the CiC fails shows unreachable at once.
 
-[Unreleased]: https://github.com/LM1LC3N7/gladys-quatt/commits/main
+[Unreleased]: https://github.com/LM1LC3N7/gladys-quatt/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/LM1LC3N7/gladys-quatt/releases/tag/v0.1.1
