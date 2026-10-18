@@ -547,8 +547,10 @@ export class QuattApp {
   // --- Devices created / updated / deleted in Gladys -------------------------
 
   async deviceCreated(device) {
-    if (!parseExternalId(this.gladys, device?.external_id) || !this.online) return;
-    await this.publishStates();
+    if (!parseExternalId(this.gladys, device?.external_id)) return;
+    // Offline too: a device created or updated while the CiC fails must show
+    // "unreachable" at once. Only the states need a reading.
+    if (this.online) await this.publishStates();
     await this.publishTransports();
   }
 

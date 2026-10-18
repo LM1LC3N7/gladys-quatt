@@ -60,12 +60,14 @@ the connection** button reads the CiC right away and lists what it reports.
 
 ## What the values mean
 
-- **Water temperatures and outside temperature** are probes: Gladys keeps
-  them out of the temperature of the room the device is in. Only the **room
-  temperature** of the thermostat counts there.
+- **Water temperatures, outside temperature and both setpoints** (room
+  setpoint and water setpoint asked) are probes: Gladys keeps them out of the
+  temperature of the room the device is in. Only the **room temperature** of
+  the thermostat counts there.
 - **COP**: the heat power divided by the electrical power, as the heat pumps
-  report them (the "Quatt COP" of Home Assistant). It is not published when
-  the electrical power is zero, nor during a defrost (it would be negative).
+  report them (the "Quatt COP" of Home Assistant). It is published only while
+  the heat pump heats, or draws more than 100 W: at standby (a few watts) the
+  ratio means nothing. Nor during a defrost (it would be negative).
 - **Heat power of the boiler**: an **estimate** (flow meter temperature minus
   the heat pump outlet × flow × heat capacity of water), as in Home
   Assistant; 0 when the boiler does not heat.

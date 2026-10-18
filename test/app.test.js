@@ -9,7 +9,7 @@ import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
 import { QuattApp } from '../src/app.js';
 import { ACTIONS, DEVICE_TYPES, INTERVALS } from '../src/constants.js';
 import { buildDevice } from '../src/devices.js';
-import { registerHandlers } from '../src/handlers.js';
+import { CONFIG_SLOW_RETRY_MS, registerHandlers } from '../src/handlers.js';
 import { memoryStore } from '../src/store.js';
 import {
   OTHER_UUID,
@@ -368,4 +368,65 @@ test('the state budget: a cut rotates, no feature held back for ever', async () 
   }
   for (const s of gladys.fake.states.slice(from)) seen.add(s.device_feature_external_id);
   assert.equal(seen.size, app.states().length);
+});
+
+test('a retry under a minute is said in seconds, then in minutes', async () => {
+  const { gladys, cic, timers } = await setup();
+  cic.unreachable = true;
+  await poll(timers);
+  assert.match(gladys.fake.connectionStatus.message.en, /Retried in 30 s\.$/);
+  assert.match(gladys.fake.connectionStatus.message.fr, /Nouvel essai dans 30 s\.$/);
+  await timers.run();
+  assert.match(gladys.fake.connectionStatus.message.en, /Retried in 1 min\.$/);
+});
+
+test('a device created while the CiC fails shows unreachable at once', async () => {
+  const { gladys, cic, timers } = await setup({ created: [system()] });
+  cic.unreachable = true;
+  await poll(timers);
+  const states = gladys.fake.states.length;
+  await gladys.fake.deviceCreated(hp());
+  await settle();
+  assert.equal(badge(gladys, hp()), 'unreachable');
+  assert.equal(gladys.fake.states.length, states, 'no state without a reading');
+});
+
+test('configuration not given by Gladys: said in the status, asked again every 10 min', async () => {
+  const gladys = createFakeGladys({ selector: SELECTOR, config: BASE_CONFIG, devices: [] });
+  const cic = createFakeCic();
+  const timers = createFakeTimers();
+  const quiet = { debug() {}, info() {}, warn() {}, error() {} };
+  const app = new QuattApp({
+    gladys,
+    logger: quiet,
+    request: cic.request,
+    now: () => T0,
+    timers,
+    store: memoryStore(),
+  });
+  running = app;
+  let failing = true;
+  let calls = 0;
+  const getConfig = gladys.getConfig.bind(gladys);
+  gladys.getConfig = async () => {
+    // The first call is the SDK's own, inside connect(); the handler's follow.
+    calls += 1;
+    if (failing && calls > 1) throw new Error('unavailable');
+    return getConfig();
+  };
+  registerHandlers(gladys, app, quiet);
+  await gladys.connect();
+  for (const delay of [30_000, 60_000, 120_000]) {
+    assert.deepEqual(timers.delays(), [delay]);
+    await timers.run();
+  }
+  assert.equal(gladys.fake.connectionStatus.connected, false);
+  assert.match(gladys.fake.connectionStatus.message.en, /did not give the configuration/);
+  assert.deepEqual(timers.delays(), [CONFIG_SLOW_RETRY_MS]);
+  await timers.run();
+  assert.deepEqual(timers.delays(), [CONFIG_SLOW_RETRY_MS], 'still one timer, same pace');
+  failing = false;
+  await timers.run();
+  assert.equal(gladys.fake.connectionStatus.connected, true);
+  assert.equal(cic.requests.length, 1);
 });

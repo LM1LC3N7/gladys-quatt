@@ -50,6 +50,9 @@ export function conversionFactor(celsius) {
   return best[1];
 }
 
+/** Below this electrical power, a heat pump that is not heating is idle: no COP. */
+export const COP_MIN_INPUT_W = 100;
+
 /** Heat power / electrical power; null when the input is 0 or unknown. */
 export function quattCop(heatPower, powerInput) {
   if (heatPower === null || powerInput === null || powerInput === 0) return null;
@@ -58,13 +61,23 @@ export function quattCop(heatPower, powerInput) {
   return num(cop + 0, RANGES.COP);
 }
 
+/**
+ * The COP worth publishing: only while the heat pumps heat (mode 2 or 3) or
+ * draw more than 100 W; at standby (a few watts) the ratio means nothing.
+ */
+export function workingCop(heatPower, powerInput, mode) {
+  const heating = [MODES.HEATPUMP_ONLY, MODES.HEATPUMP_PLUS_BOILER].includes(mode);
+  if (!heating && !(powerInput > COP_MIN_INPUT_W)) return null;
+  return quattCop(heatPower, powerInput);
+}
+
 const delta = (out, inlet) => (out === null || inlet === null ? null : round2(out - inlet));
 
 function parseHeatpump(node, number, mode) {
   if (!isObject(node)) return null;
   const supplyTemperature = temperature(node, 'temperatureWaterOut');
   const returnTemperature = temperature(node, 'temperatureWaterIn');
-  const powerInput = power(node, 'powerInput');
+  const powerInput = num(own(node, 'powerInput'), RANGES.POWER_INPUT);
   const heatPower = power(node, 'power');
   const waterDelta = delta(supplyTemperature, returnTemperature);
   // Defrost (coordinator_local_cic.computed_defrost): heating, yet heat is
@@ -82,7 +95,7 @@ function parseHeatpump(node, number, mode) {
     outsideTemperature: temperature(node, 'temperatureOutside'),
     powerInput,
     heatPower,
-    cop: quattCop(heatPower, powerInput),
+    cop: workingCop(heatPower, powerInput, mode),
     defrost,
     silentMode: flag(own(node, 'silentModeStatus')),
     limitedByCop: flag(own(node, 'limitedByCop')),
@@ -105,8 +118,10 @@ function parseBoiler(node, { heatpumpOut, flowRate, flowTemperature }) {
     flowRate !== null &&
     flowTemperature !== null
   ) {
-    heatPower = positive(
-      (flowTemperature - heatpumpOut) * flowRate * conversionFactor(flowTemperature),
+    // Bounded like a reported power: absurd inputs give "unknown", not a value.
+    heatPower = num(
+      positive((flowTemperature - heatpumpOut) * flowRate * conversionFactor(flowTemperature)),
+      RANGES.POWER,
     );
   }
   return {
@@ -163,8 +178,9 @@ export function parseFeed(json) {
   const last = heatpumps.at(-1);
   const flowRate = num(own(qc, 'flowRateFiltered'), RANGES.FLOW);
   const flowTemperature = temperature(own(json, 'flowMeter'), 'waterSupplyTemperature');
-  const powerInput = sum(heatpumps.map((hp) => hp.powerInput));
-  const heatPower = sum(heatpumps.map((hp) => hp.heatPower));
+  // The totals are bounded too: two plausible values may add up to an absurd one.
+  const powerInput = num(sum(heatpumps.map((hp) => hp.powerInput)), RANGES.POWER_INPUT);
+  const heatPower = num(sum(heatpumps.map((hp) => hp.heatPower)), RANGES.POWER);
   return {
     cicId: match[1].toLowerCase(),
     heatpumps,
@@ -186,7 +202,7 @@ export function parseFeed(json) {
       outsideTemperature: heatpumps[0].outsideTemperature,
       powerInput,
       heatPower,
-      cop: quattCop(heatPower, powerInput),
+      cop: workingCop(heatPower, powerInput, mode),
     },
   };
 }

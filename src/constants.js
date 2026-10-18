@@ -147,7 +147,10 @@ export const CONVERSION_FACTORS = Object.freeze([
  */
 export const RANGES = Object.freeze({
   TEMPERATURE: [-50, 150],
+  /** Heat power: negative during a defrost (heat taken from the water). */
   POWER: [-50_000, 100_000],
+  /** Electrical power drawn: never negative. */
+  POWER_INPUT: [0, 100_000],
   COP: [0, 20],
   FLOW: [0, 20_000],
   PRESSURE: [0, 10],

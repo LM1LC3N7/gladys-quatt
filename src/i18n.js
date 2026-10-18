@@ -8,7 +8,15 @@
 import { COMMISSIONING, MODES } from './constants.js';
 import { CODES } from './quatt/errors.js';
 
-const minutes = (ms) => Math.max(1, Math.round(ms / 60_000));
+/** A delay in words: seconds below a minute (the first retry is 30 s, not "1 min"). */
+export function duration(ms) {
+  if (ms < 60_000) {
+    const seconds = Math.max(1, Math.round(ms / 1000));
+    return { en: `${seconds} s`, fr: `${seconds} s` };
+  }
+  const minutes = Math.round(ms / 60_000);
+  return { en: `${minutes} min`, fr: `${minutes} min` };
+}
 
 /** Why the CiC failed, in a few words (codes and statuses only). */
 export function reasonOf(err) {
@@ -31,8 +39,8 @@ export function reasonOf(err) {
 }
 
 const RETRY = (delay) => ({
-  en: `Retried in ${minutes(delay)} min.`,
-  fr: `Nouvel essai dans ${minutes(delay)} min.`,
+  en: `Retried in ${duration(delay).en}.`,
+  fr: `Nouvel essai dans ${duration(delay).fr}.`,
 });
 
 const join = (...parts) => ({
@@ -69,6 +77,14 @@ export const T = {
       const s = summary(seen);
       return { en: `The CiC answers: ${s.en}.`, fr: `Le CiC répond : ${s.fr}.` };
     },
+    configUnreadable: (delay) =>
+      join(
+        {
+          en: 'Gladys did not give the configuration of the integration: the CiC is not read.',
+          fr: 'Gladys n’a pas donné la configuration de l’intégration : le CiC n’est pas lu.',
+        },
+        RETRY(delay),
+      ),
     hostEmpty: {
       en: 'Type the address of the Quatt CiC (e.g. 192.168.1.30).',
       fr: 'Saisissez l’adresse du CiC Quatt (ex. 192.168.1.30).',

@@ -30,5 +30,13 @@ the notes of the version's GitHub Release.
 - Reading every 30 s; the CiC unreachable: every device unreachable, retried
   30 s to 10 min; HTTP 429: pause of 1 min to 6 h, kept across a restart.
 - Button "Test the connection". Device texts in French or English.
+- The COP is published only while the heat pumps heat or draw more than
+  100 W (no meaningless ratio at standby).
+- Computed powers (boiler estimate, totals of a Duo) are range-checked like
+  the reported ones; the electrical power is never negative.
+- Configuration not given by Gladys: a status says so and it is asked again
+  every 10 min.
+- Retry delays under a minute are shown in seconds.
+- A device created or updated while the CiC fails shows unreachable at once.
 
 [Unreleased]: https://github.com/LM1LC3N7/gladys-quatt/commits/main

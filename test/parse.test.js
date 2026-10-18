@@ -5,8 +5,55 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { conversionFactor, parseFeed, parseJson, quattCop } from '../src/quatt/parse.js';
+import {
+  conversionFactor,
+  parseFeed,
+  parseJson,
+  quattCop,
+  workingCop,
+} from '../src/quatt/parse.js';
 import { UUID, duoAllElectricFeed, hybridFeed } from './helpers/fakeCic.js';
+
+test('absurd temperatures and flow: the boiler estimate is unknown, nothing published', () => {
+  const json = hybridFeed({ mode: 3 });
+  json.boiler.otTbCH = true;
+  // Each value is within its own range, the product is not: 140 K × 20 000 l/h.
+  json.hp1.temperatureWaterOut = -10;
+  json.flowMeter.waterSupplyTemperature = 130;
+  json.qc.flowRateFiltered = 20_000;
+  assert.equal(parseFeed(json).boiler.heatPower, null);
+});
+
+test('the totals of a Duo are range-checked: 2 × 100 kW, negative inputs', () => {
+  const json = duoAllElectricFeed();
+  json.qc.supervisoryControlMode = 2;
+  json.hp1.powerInput = 100_000;
+  json.hp2.powerInput = 100_000;
+  json.hp1.power = 100_000;
+  json.hp2.power = 100_000;
+  let feed = parseFeed(json);
+  assert.equal(feed.heatpumps[0].powerInput, 100_000, 'each one is plausible');
+  assert.equal(feed.system.powerInput, null, '200 kW is not');
+  assert.equal(feed.system.heatPower, null);
+  assert.equal(feed.system.cop, null);
+  json.hp1.powerInput = -500;
+  json.hp2.powerInput = -500;
+  json.hp1.power = 2000;
+  json.hp2.power = 2000;
+  feed = parseFeed(json);
+  assert.equal(feed.heatpumps[0].powerInput, null, 'an electrical power is never negative');
+  assert.equal(feed.system.powerInput, null);
+  assert.equal(feed.system.cop, null);
+});
+
+test('the COP only while heating or above 100 W', () => {
+  assert.equal(workingCop(40, 10, 0), null, 'standby');
+  assert.equal(workingCop(400, 100, 0), null, '100 W is not above 100 W');
+  assert.equal(workingCop(404, 101, 0), 4);
+  assert.equal(workingCop(40, 10, 2), 4, 'heating (heat pump only)');
+  assert.equal(workingCop(40, 10, 3), 4, 'heating (with the boiler)');
+  assert.equal(workingCop(40, 10, null), null, 'unknown mode, low input');
+});
 
 test('a hybrid installation: heat pump, boiler, thermostat, system', () => {
   const feed = parseFeed(hybridFeed());
@@ -84,8 +131,8 @@ test('the duo all-electric fixture of home-assistant-quatt', () => {
   assert.equal(feed.boiler, null);
   assert.equal(feed.system.powerInput, 10.3);
   assert.equal(feed.system.heatPower, 0);
-  assert.equal(feed.system.cop, 0);
-  assert.equal(Object.is(feed.system.cop, -0), false);
+  assert.equal(feed.system.cop, null, 'standby, 10.3 W: no COP');
+  assert.equal(feed.heatpumps[0].cop, null);
   assert.equal(feed.system.fault, false);
   assert.equal(feed.heatpumps[1].supplyTemperature, 21.52);
   assert.equal(feed.thermostat.roomSetpoint, 5);

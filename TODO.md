@@ -36,7 +36,10 @@ up to date at the end of every milestone.
     the boiler's own flags vs the CiC's on/off);
   - the meaning of `getMainWorkingMode` (published as a code only);
   - other fault states (the local API seems to carry only modes 99 and 400);
-  - how a CiC behaves under a 30 s reading (Home Assistant reads every 10 s).
+  - how a CiC behaves under a 30 s reading (Home Assistant reads every 10 s);
+  - whether the HomeKit, Google Home and Alexa bridges of Gladys filter
+    `temperature-sensor` features by type: if they expose `probe` ones too,
+    the setpoints and water temperatures may show as room thermometers there.
 - [ ] **Later**: the all-electric values (heat battery `hb.*`: shower
       minutes, temperatures; heat charger `hc.*`: power, pressure), the
       anti-legionella flag, the chill (`qcChill`) values.
@@ -68,9 +71,16 @@ up to date at the end of every milestone.
   consumption, no `publishEnergyConsumption` (an integral of the power would
   be a made-up total and the core counts every index increase).
 - **COP**: the "Quatt COP" (heat power / electrical power of the heat pumps),
-  `unknown`/`decimal` without unit (none fits), 0 to 20; not published when
-  the input is 0 or the result negative (defrost). Home Assistant's other COP
-  needs an external power meter: not ported.
+  `unknown`/`decimal` without unit (none fits), 0 to 20; published only while
+  the heat pumps heat (mode 2 or 3) or the electrical input exceeds 100 W
+  (`COP_MIN_INPUT_W`: at standby a few watts make a meaningless ratio, Home
+  Assistant shows it anyway); not published when the input is 0 or the
+  result negative (defrost). Home Assistant's other COP needs an external
+  power meter: not ported.
+- **Power ranges**: electrical input 0 to 100 kW (never negative), heat power
+  -50 to 100 kW (negative in a defrost). Computed values are bounded like
+  reported ones: the boiler estimate and the totals of a Duo pass the same
+  range check, so absurd inputs give "unknown", never a published value.
 - **Flow rate**: `unknown`/`decimal` in l/h, the unit in the feature name:
   the core lists m³/h only for `water-valve`, a valve category that would be
   shown as a valve.
@@ -113,6 +123,13 @@ up to date at the end of every milestone.
   refused with a message, no path) and the language of the devices (French by
   default). No interval option: 30 s keeps a round well under the 300
   states/min of Gladys.
+- **Configuration unreadable on `connected`**: asked again 3 times (30 s,
+  60 s, 120 s), then a status says so and it is asked every 10 min (never a
+  silent stop).
+- **Delays in the status**: seconds below a minute ("Retried in 30 s"),
+  minutes above.
+- **Badges of a device created or updated offline**: published at once
+  ("unreachable"); only the states wait for a reading.
 - **Logs**: codes and HTTP statuses only, never the body of an answer.
 
 ## Ideas (not planned)

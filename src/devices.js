@@ -53,13 +53,13 @@ const temperature = (type = T.TEMPERATURE_SENSOR.PROBE) =>
     min: RANGES.TEMPERATURE[0],
     max: RANGES.TEMPERATURE[1],
   });
-const power = () =>
+const power = ([min, max] = RANGES.POWER) =>
   readOnly({
     category: C.ENERGY_SENSOR,
     type: T.ENERGY_SENSOR.POWER,
     unit: U.WATT,
-    min: RANGES.POWER[0],
-    max: RANGES.POWER[1],
+    min,
+    max,
   });
 /** No unit the core lists fits a COP or a flow in l/h: a plain decimal. */
 const decimal = ([min, max]) => readOnly({ category: C.UNKNOWN, type: T.SENSOR.DECIMAL, min, max });
@@ -79,7 +79,7 @@ export const FEATURE_SPECS = Object.freeze({
     [SF.FLOW_RATE, decimal(RANGES.FLOW)],
     [SF.SUPPLY_TEMPERATURE, temperature()],
     [SF.OUTSIDE_TEMPERATURE, temperature()],
-    [SF.POWER_INPUT, power()],
+    [SF.POWER_INPUT, power(RANGES.POWER_INPUT)],
     [SF.HEAT_POWER, power()],
     [SF.COP, decimal(RANGES.COP)],
   ],
@@ -87,7 +87,7 @@ export const FEATURE_SPECS = Object.freeze({
     [HF.SUPPLY_TEMPERATURE, temperature()],
     [HF.RETURN_TEMPERATURE, temperature()],
     [HF.OUTSIDE_TEMPERATURE, temperature()],
-    [HF.POWER_INPUT, power()],
+    [HF.POWER_INPUT, power(RANGES.POWER_INPUT)],
     [HF.HEAT_POWER, power()],
     [HF.COP, decimal(RANGES.COP)],
     [HF.DEFROST, binary()],

@@ -4,9 +4,12 @@
 // -----------------------------------------------------------------------------
 
 import { ACTIONS } from './constants.js';
+import { T } from './i18n.js';
 
 /** How many more times the configuration is asked for after a failed read. */
 export const CONFIG_RETRIES = 3;
+/** Then it is asked again at this pace, for as long as it fails. */
+export const CONFIG_SLOW_RETRY_MS = 10 * 60_000;
 
 export function registerHandlers(gladys, app, logger) {
   // --- Discovery and device lifecycle ------------------------------------------
@@ -32,6 +35,8 @@ export function registerHandlers(gladys, app, logger) {
   // same configuration keeps the client and a pause.
   // The configuration that cannot be read is asked again, a bounded number of
   // times (30 s, 60 s, 120 s), on the app's timers (cleared on disconnection).
+  // After those, the status says so and it is asked every 10 min: never a
+  // silent stop, never a fast loop.
   const startWithConfig = async (attempt = 0) => {
     let config;
     try {
@@ -39,6 +44,8 @@ export function registerHandlers(gladys, app, logger) {
     } catch (err) {
       if (attempt >= CONFIG_RETRIES) {
         logger?.error(`Configuration not read: ${err?.message ?? 'error'}`);
+        await app.setStatus(false, T.status.configUnreadable(CONFIG_SLOW_RETRY_MS));
+        app.schedule(CONFIG_SLOW_RETRY_MS, () => startWithConfig(attempt));
         return;
       }
       logger?.warn(`Configuration not read, asked again: ${err?.message ?? 'error'}`);

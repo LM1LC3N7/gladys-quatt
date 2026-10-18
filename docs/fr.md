@@ -64,13 +64,15 @@ signale.
 
 ## Ce que valent les valeurs
 
-- **Températures de l'eau et température extérieure** : ce sont des sondes ;
+- **Températures de l'eau, température extérieure et les deux consignes**
+  (consigne de la pièce et consigne d'eau demandée) : ce sont des sondes ;
   Gladys ne les compte pas dans la température de la pièce où l'appareil est
   rangé. Seule la **température de la pièce** du thermostat y compte.
 - **COP** : la puissance thermique divisée par la puissance électrique, telles
   que les pompes à chaleur les donnent (le « Quatt COP » de Home Assistant).
-  Il n'est pas publié quand la puissance électrique est nulle, ni pendant un
-  dégivrage (il serait négatif).
+  Il n'est publié que quand la pompe à chaleur chauffe, ou qu'elle consomme
+  plus de 100 W : en veille (quelques watts), ce rapport ne veut rien dire.
+  Il ne l'est pas non plus pendant un dégivrage (il serait négatif).
 - **Puissance thermique de la chaudière** : une **estimation** (différence
   entre la température du débitmètre et la sortie de la pompe à chaleur ×
   débit × capacité de l'eau), comme dans Home Assistant ; 0 quand la chaudière
