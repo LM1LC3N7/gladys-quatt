@@ -212,7 +212,11 @@ export class QuattApp {
     this.transports.clear();
     this.discoveredKey = null;
     this.gladys.forgetPublishedStates?.();
-    if (status) await this.setStatus(status[0], status[1]);
+    // A pause in progress: the time left is recomputed (the saved status
+    // would still say the delay of the moment the pause began).
+    if (this.client && this.paused()) {
+      await this.setStatus(false, T.status.busy(this.pausedUntil - this.now()));
+    } else if (status) await this.setStatus(status[0], status[1]);
     if (this.feed) await this.publishDiscovered();
     if (this.online) await this.publishStates();
     await this.publishTransports();

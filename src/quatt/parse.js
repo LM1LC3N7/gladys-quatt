@@ -95,7 +95,10 @@ function parseHeatpump(node, number, mode) {
     outsideTemperature: temperature(node, 'temperatureOutside'),
     powerInput,
     heatPower,
-    cop: workingCop(heatPower, powerInput, mode),
+    // Per heat pump, its own input decides: in a Duo, one unit may stand
+    // still while the installation heats (the mode is the installation's).
+    cop:
+      powerInput !== null && powerInput > COP_MIN_INPUT_W ? quattCop(heatPower, powerInput) : null,
     defrost,
     silentMode: flag(own(node, 'silentModeStatus')),
     limitedByCop: flag(own(node, 'limitedByCop')),

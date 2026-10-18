@@ -46,6 +46,24 @@ test('the totals of a Duo are range-checked: 2 × 100 kW, negative inputs', () =
   assert.equal(feed.system.cop, null);
 });
 
+test('the COP of each heat pump follows its own input: a Duo with one unit stopped', () => {
+  const json = duoAllElectricFeed();
+  json.qc.supervisoryControlMode = 2;
+  json.hp1.powerInput = 1000;
+  json.hp1.power = 4000;
+  json.hp2.powerInput = 5;
+  json.hp2.power = 0;
+  const feed = parseFeed(json);
+  assert.equal(feed.heatpumps[0].cop, 4);
+  assert.equal(feed.heatpumps[1].cop, null, 'stopped (5 W), though the installation heats');
+  assert.equal(feed.system.cop, 3.98, 'the installation: 4000 / 1005');
+  json.qc.supervisoryControlMode = 0;
+  json.hp2.powerInput = 500;
+  json.hp2.power = 1500;
+  const standby = parseFeed(json);
+  assert.equal(standby.heatpumps[1].cop, 3, 'above 100 W, whatever the mode');
+});
+
 test('the COP only while heating or above 100 W', () => {
   assert.equal(workingCop(40, 10, 0), null, 'standby');
   assert.equal(workingCop(400, 100, 0), null, '100 W is not above 100 W');

@@ -123,6 +123,17 @@ up to date at the end of every milestone.
   refused with a message, no path) and the language of the devices (French by
   default). No interval option: 30 s keeps a round well under the 300
   states/min of Gladys.
+- **Feature min / max frozen after the first release**: like units and
+  types, the `min` / `max` of a created feature stay in the user's Gladys;
+  changing them later would make the core mark the device "structure
+  changed". The ranges of `RANGES` (`src/constants.js`) must not change once
+  0.1.1 is out; a wider value is published only within the old bounds.
+- **COP per heat pump vs installation**: a heat pump's COP depends only on
+  its own input (> 100 W), since one unit of a Duo may stand still while the
+  installation heats; the mode (2 or 3) counts only for the installation's
+  COP.
+- **Status on reconnection during a 429 pause**: recomputed with the time
+  left, never the delay of the moment the pause began.
 - **Configuration unreadable on `connected`**: asked again 3 times (30 s,
   60 s, 120 s), then a status says so and it is asked every 10 min (never a
   silent stop).

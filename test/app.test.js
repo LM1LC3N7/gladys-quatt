@@ -370,6 +370,19 @@ test('the state budget: a cut rotates, no feature held back for ever', async () 
   assert.equal(seen.size, app.states().length);
 });
 
+test('a reconnection during a 429 pause says the time left, not the first delay', async () => {
+  const { gladys, cic, timers, clock } = await setup();
+  cic.failures.push({ status: 429, headers: { 'retry-after': '600' } });
+  await poll(timers);
+  assert.match(gladys.fake.connectionStatus.message.en, /Retried in 10 min\.$/);
+  clock.now += 9.5 * 60_000;
+  await gladys.disconnect();
+  await gladys.connect();
+  assert.equal(gladys.fake.connectionStatus.connected, false);
+  assert.match(gladys.fake.connectionStatus.message.en, /slow down.*Retried in 30 s\.$/);
+  assert.deepEqual(timers.delays(), [30_000], 'the read waits for the end of the pause');
+});
+
 test('a retry under a minute is said in seconds, then in minutes', async () => {
   const { gladys, cic, timers } = await setup();
   cic.unreachable = true;
