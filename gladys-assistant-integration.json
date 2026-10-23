@@ -6,8 +6,8 @@
     "en": "Quatt hybrid heat pump, read locally from its CiC: temperatures, power, COP, status.",
     "fr": "Pompe à chaleur hybride Quatt, lue en local par son CiC : températures, puissance, COP, état."
   },
-  "version": "0.1.1",
-  "docker_image": "ghcr.io/lm1lc3n7/gladys-quatt:0.1.1",
+  "version": "0.1.2",
+  "docker_image": "ghcr.io/lm1lc3n7/gladys-quatt:0.1.2",
   "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/LM1LC3N7/gladys-quatt/main/cover.png",
   "categories": ["climate"],
